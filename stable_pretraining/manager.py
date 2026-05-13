@@ -497,6 +497,7 @@ class Manager(submitit.helpers.Checkpointable):
         seed: int = None,
         ckpt_path: str = None,
         weights_only: bool = True,
+        run_id: str = None,
         compile: bool = False,
     ):
         # Install the SIGTERM→USR_SIG forwarder FIRST — before any other init
@@ -551,6 +552,8 @@ class Manager(submitit.helpers.Checkpointable):
         self._register_module(module)
         self._register_data(data)
         self.seed = seed
+        self.run_id = run_id or _generate_run_id()
+        logging.info(f"  Assigned run_id: {self.run_id}")
 
     def _maybe_restore_wandb_run_id(self):
         """Inject a previous wandb run ID into the logger BEFORE wandb.init() fires.
