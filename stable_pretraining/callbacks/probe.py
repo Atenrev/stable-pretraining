@@ -160,8 +160,8 @@ class OnlineProbe(TrainableCallback):
 
             scalar_logs = {}
             metric_logs = {}
+            loss = callback.loss(preds, y)
             if stage == "fit":
-                loss = callback.loss(preds, y)
                 assert f"train/{callback.name}_loss" not in scalar_logs
                 if "loss" not in outputs:
                     outputs["loss"] = 0
@@ -174,6 +174,7 @@ class OnlineProbe(TrainableCallback):
                     assert f"train/{callback.name}_{metric_name}" not in metric_logs
                     metric_logs[f"train/{callback.name}_{metric_name}"] = metric
             elif stage == "validate":
+                scalar_logs[f"eval/{callback.name}_loss"] = loss.item()
                 my_metrics = pl_module.callbacks_metrics[callback.name]["_val"]
                 for metric_name, metric in my_metrics.items():
                     metric(preds, y)
@@ -184,7 +185,9 @@ class OnlineProbe(TrainableCallback):
                 self.log_dict(scalar_logs, on_step=True, on_epoch=True, sync_dist=True)
             # torchmetrics: handle their own distributed sync, do NOT use sync_dist
             if metric_logs:
-                self.log_dict(metric_logs, on_step=True, on_epoch=True, sync_dist=False)
+                # on_step is only allowed in training_step (fit stage)
+                on_step = stage == "fit"
+                self.log_dict(metric_logs, on_step=on_step, on_epoch=True, sync_dist=False)
             return outputs
 
         # Bind the new method to the instance

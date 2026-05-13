@@ -97,10 +97,9 @@ class TrainableCallback(Callback):
             # them (e.g. generative/reconstruction heads whose only output
             # is a loss scalar).
             metrics = getattr(callback, "metrics", None)
-            if metrics is not None:
-                logging.info("  setting up metrics")
-                assert callback.name not in self.callbacks_metrics
-                self.callbacks_metrics[callback.name] = format_metrics_as_dict(metrics)
+            logging.info("  setting up metrics")
+            assert callback.name not in self.callbacks_metrics
+            self.callbacks_metrics[callback.name] = format_metrics_as_dict(metrics)
 
         # Bind the new method to the instance
         logging.info("  wrapping configure_model")

@@ -153,6 +153,7 @@ class Manager(submitit.helpers.Checkpointable):
         data: Union[dict, DictConfig, pl.LightningDataModule],
         seed: int = None,
         ckpt_path: str = None,
+        run_id: str = None,
         resume_weights_only: Optional[bool] = False,
         compile: bool = False,
     ):
@@ -169,6 +170,7 @@ class Manager(submitit.helpers.Checkpointable):
         if ckpt_path is not None:
             ckpt_path = Path(ckpt_path).with_suffix(".ckpt").resolve()
         self.ckpt_path = ckpt_path
+        self.run_id = run_id
         self.resume_weights_only = resume_weights_only
 
     def _maybe_restore_wandb_run_id(self):
@@ -407,7 +409,7 @@ class Manager(submitit.helpers.Checkpointable):
 
         # Fresh run
         now = datetime.now()
-        run_id = _generate_run_id()
+        run_id = self.run_id or _generate_run_id()
         run_dir = (
             cache_dir
             / "runs"
@@ -448,8 +450,8 @@ class Manager(submitit.helpers.Checkpointable):
                 except Exception as exc:
                     logging.warning(f"! Could not read {meta_path}: {exc}")
 
-        # Strategy 2: search by deterministic run_id (SLURM/torchrun requeue)
-        run_id = _generate_run_id()
+        # Strategy 2: search by deterministic run_id (SLURM/torchrun requeue or user-provided)
+        run_id = self.run_id or _generate_run_id()
         matches = sorted(cache_dir.glob(f"runs/*/*/{run_id}"))
         if matches:
             # Take the most recent (last sorted by date/time path)
