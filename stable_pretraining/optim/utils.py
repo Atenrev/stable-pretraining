@@ -13,12 +13,11 @@ from .. import optim as ssl_optim
 
 
 def is_bias_or_norm_param(name: str, param: torch.nn.Parameter) -> bool:
-    """Check if a parameter is a bias or belongs to a normalization layer.
+    """Check if a parameter should be excluded from weight decay.
 
-    Parameters are considered bias/norm if:
-    - The parameter name ends with ".bias"
-    - The parameter name contains "norm" (e.g., LayerNorm, BatchNorm, GroupNorm)
-    - The parameter is 1D (biases are typically 1D tensors)
+    Parameters are considered bias/norm/gate if:
+    - The parameter is 1D or 0D (param.ndim <= 1)
+    - The parameter name contains "gate", "bias", "norm", or "modality_emb"
 
     Args:
         name: Full parameter name (e.g., "encoder.layer1.bn.weight")
@@ -27,19 +26,18 @@ def is_bias_or_norm_param(name: str, param: torch.nn.Parameter) -> bool:
     Returns:
         True if the parameter should be excluded from weight decay
     """
-    # Check for bias parameters
-    if name.endswith(".bias") or name == "bias":
+    if param.ndim <= 1:
         return True
 
-    # Check for normalization layer parameters
-    # Matches: LayerNorm, BatchNorm, GroupNorm, InstanceNorm, RMSNorm, etc.
     name_lower = name.lower()
-    if "norm" in name_lower:
+    if (
+        "gate" in name_lower
+        or "bias" in name_lower
+        or "norm" in name_lower
+        or "modality_emb" in name_lower
+    ):
         return True
 
-    # 1D parameters are typically biases (though this is a heuristic)
-    # Skip this check if the name doesn't suggest it's a bias
-    # This catches cases like "bn1.weight" which are norm layer scales
     return False
 
 
