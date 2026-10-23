@@ -258,6 +258,8 @@ class Module(pl.LightningModule):
             raise ValueError(msg)
         batch["batch_idx"] = batch_idx
         state = self(batch, stage="fit")
+        if state is None:
+            return None
 
         # Resolve optimizers and schedulers (can be single or list)
         optimizers = self.optimizers()
